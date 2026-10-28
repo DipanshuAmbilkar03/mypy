@@ -3539,6 +3539,20 @@ class TypeChecker(NodeVisitor[None], TypeCheckerSharedApi, SplittingVisitor):
                                 var.type = None
                             del partial_types[var]
                             lvalue_type = var.type
+                        elif var.type is not None:
+                            # The partial type was already inferred, most likely by an assignment
+                            # expression to the same variable inside the rvalue. We still need to
+                            # check this assignment against the inferred type, like any other
+                            # assignment, instead of silently accepting it.
+                            lvalue_type = var.type
+                            self.check_subtype(
+                                rvalue_type,
+                                lvalue_type,
+                                rvalue,
+                                message_registry.INCOMPATIBLE_TYPES_IN_ASSIGNMENT,
+                                "expression has type",
+                                "variable has type",
+                            )
                     else:
                         # Try to infer a partial type.
                         if not self.infer_partial_type(var, lvalue, rvalue_type):
